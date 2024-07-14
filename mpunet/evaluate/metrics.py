@@ -15,8 +15,8 @@ def dice(y_true, y_pred, smooth=1.0):
     Calculates the Soerensen dice coefficient between two binary sets
     """
     # Flatten and bool the ground truth and predicted labels
-    s1 = np.array(y_true).flatten().astype(np.bool)
-    s2 = np.array(y_pred).flatten().astype(np.bool)
+    s1 = np.array(y_true).flatten().astype(bool)
+    s2 = np.array(y_pred).flatten().astype(bool)
 
     # Calculate dice
     return (smooth + 2 * np.logical_and(s1, s2).sum()) \

@@ -25,7 +25,7 @@ def get_free_gpus(max_allowed_mem_usage=400):
     try:
         # Get list of GPUs
         gpu_list = check_output(["nvidia-smi", "-L"], universal_newlines=True)
-        gpu_ids = np.array(re.findall(r"GPU[ ]+(\d+)", gpu_list), dtype=np.int)
+        gpu_ids = np.array(re.findall(r"GPU[ ]+(\d+)", gpu_list), dtype=int)
 
         # Query memory usage stats from nvidia-smi
         output = check_output(["nvidia-smi", "-q", "-d", "MEMORY"],
@@ -218,7 +218,7 @@ def set_bias_weights(layer, data_queue, class_counts=None, logger=None):
 
     # Estimate counts if not specified
     if class_counts is None:
-        class_counts = np.zeros(shape=[n_classes], dtype=np.int)
+        class_counts = np.zeros(shape=[n_classes], dtype=int)
         if hasattr(data_queue, 'max_loaded'):
             # Limitation queue, count once for each image currently in queue
             n_images = data_queue.max_loaded

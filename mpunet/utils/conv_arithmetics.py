@@ -22,7 +22,7 @@ def output_features(in_filter_size, padding, kernel_size, stride=1, dim=2):
                                                                   stride],
                                                                  dim=dim)
 
-    return np.floor((in_filter_size + (2*padding) - kernel_size)/stride).astype(np.int) + 1
+    return np.floor((in_filter_size + (2*padding) - kernel_size)/stride).astype(int) + 1
 
 
 def output_feature_distance(input_feature_distance, stride, dim=2):
@@ -57,6 +57,7 @@ def output_first_feature_center(input_first_feature_center, kernel_size,
 def compute_receptive_fields(layers, verbose=False):
     input_ = layers[0]
     layers = layers[1:]
+    # size = input_.input[1:-1]
     size = input_.input.get_shape().as_list()[1:-1]
     dim = len(size)
 
@@ -80,9 +81,9 @@ def compute_receptive_fields(layers, verbose=False):
 
         # Get potential dilation rates
         try:
-            dilation = np.array(layer.dilation_rate).astype(np.int)
+            dilation = np.array(layer.dilation_rate).astype(int)
         except AttributeError:
-            dilation = np.ones(shape=[dim], dtype=np.int)
+            dilation = np.ones(shape=[dim], dtype=int)
         if hasattr(layer, "dilations"):
             assert (dilation == 1).all()
             dilation = np.array(layer.dilations)
@@ -96,7 +97,7 @@ def compute_receptive_fields(layers, verbose=False):
         m = np.where(dilation > 1)
         ks[m] -= (dilation[m]-1)
 
-        size = np.array(layer.output.get_shape().as_list()[1:-1])
+        size = np.array(layer.output.shape[1:-1])
         jump = output_feature_distance(jump, stride, dim)
         receptive_field = output_receptive_field(receptive_field, ks, jump, dim)
 

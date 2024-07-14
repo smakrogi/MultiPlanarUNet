@@ -1,4 +1,5 @@
 import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # this MUST come before any tf call to remove AutoShardPolicy warnings.
 import numpy as np
 import tensorflow as tf
 from mpunet.callbacks import init_callback_objects

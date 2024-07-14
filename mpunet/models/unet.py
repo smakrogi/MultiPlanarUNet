@@ -219,8 +219,8 @@ class UNet(Model):
         """
         If necessary, applies Cropping2D layer to node1 to match shape of node2
         """
-        s1 = np.array(node1.get_shape().as_list())[1:-1]
-        s2 = np.array(node2.get_shape().as_list())[1:-1]
+        s1 = np.array(node1.shape)[1:-1]
+        s2 = np.array(node2.shape)[1:-1]
 
         if np.any(s1 != s2):
             c = (s1 - s2).astype(np.int)
