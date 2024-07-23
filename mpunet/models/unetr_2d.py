@@ -18,6 +18,24 @@ from tensorflow.keras.layers import Input, BatchNormalization, Cropping2D, \
                                     UpSampling2D, Reshape
 import numpy as np
 
+class Patches(L.Layer):
+    # It takes a batch of images and returns a batch of patches
+    def __init__(self, patch_size):
+        super(Patches, self).__init__()
+        self.patch_size = patch_size
+
+    def call(self, images):
+        batch_size = tf.shape(images)[0]
+        patches = tf.image.extract_patches(
+            images=images,
+            sizes=[1, self.patch_size, self.patch_size, 1],
+            strides=[1, self.patch_size, self.patch_size, 1],
+            rates=[1, 1, 1, 1],
+            padding="VALID",
+        )
+        patch_dims = tf.shape(patches)[-1]
+        patches = tf.reshape(patches, [batch_size, -1, patch_dims])
+        return patches
 
 class UNetR_2D(Model):
     """
@@ -96,15 +114,17 @@ class UNetR_2D(Model):
         self.depth = depth
         self.flatten_output = flatten_output
 
-        self.image_size = (img_rows, img_cols)
-        self.num_classes = n_classes
+        self.n_classes = n_classes
+        self.img_shape = (img_rows, img_cols, n_channels)
+        self.out_activation = out_activation
+        
         self.num_layers = 12
         self.hidden_dim = 64
         self.mlp_dim = 128
         self.num_heads = 6
         self.dropout_rate = 0.1
         self.patch_size = 16
-        self.num_patches = (self.image_size[0]*self.image_size[1])//(self.patch_size**2)
+        self.num_patches = (self.img_shape[0]*self.img_shape[1])//(self.patch_size**2)
         self.num_channels = n_channels
 
         # Shows the number of pixels cropped of the input image to the output
@@ -114,18 +134,18 @@ class UNetR_2D(Model):
         super().__init__(*self.init_model())
 
         # Compute receptive field
-        names = [x.__class__.__name__ for x in self.layers]
-        index = names.index("Conv2DTranspose")
-        self.receptive_field = compute_receptive_fields(self.layers[:index])[-1][-1]
+        # names = [x.__class__.__name__ for x in self.layers]
+        # index = names.index("Conv2DTranspose")
+        # self.receptive_field = compute_receptive_fields(self.layers[:index])[-1][-1]
 
         # Log the model definition
         self.log()
 
     def mlp(self, x):
-        x = L.Dense(self.mlp_dim], activation="gelu")(x)
-        x = L.Dropout(self.dropout_rate])(x)
-        x = L.Dense(self.hidden_dim])(x)
-        x = L.Dropout(self.dropout_rate])(x)
+        x = L.Dense(self.mlp_dim, activation="gelu")(x)
+        x = L.Dropout(self.dropout_rate)(x)
+        x = L.Dense(self.hidden_dim)(x)
+        x = L.Dropout(self.dropout_rate)(x)
         return x
 
     def transformer_encoder(self, x):
@@ -138,28 +158,30 @@ class UNetR_2D(Model):
 
         skip_2 = x
         x = L.LayerNormalization()(x)
-        x = self.mlp(self, x)
+        x = self.mlp(x)
         x = L.Add()([x, skip_2])
 
         return x
 
-    def conv_block(x, num_filters, kernel_size=3):
+    def conv_block(self, x, num_filters, kernel_size=3):
         x = L.Conv2D(num_filters, kernel_size=kernel_size, padding="same")(x)
         x = L.BatchNormalization()(x)
         x = L.ReLU()(x)
         return x
 
-    def deconv_block(x, num_filters, strides=2):
+    def deconv_block(self, x, num_filters, strides=2):
         x = L.Conv2DTranspose(num_filters, kernel_size=2, padding="same", strides=strides)(x)
         return x
 
     def init_model(self):
         """ Inputs """
-        input_shape = (self.num_patches, self.patch_size*self.patch_size*self.num_channels)
-        inputs = L.Input(input_shape) ## (None, 256, 3072)
+        inputs = L.Input(self.img_shape) 
+        patches = Patches(self.patch_size)(inputs)
+        
+        patch_shape = (self.num_patches, self.patch_size*self.patch_size*self.num_channels)
 
         """ Patch + Position Embeddings """
-        patch_embed = L.Dense(self.hidden_dim)(inputs) ## (None, 256, 768)
+        patch_embed = L.Dense(self.hidden_dim)(patches) ## (None, 256, 768)
 
         positions = tf.range(start=0, limit=self.num_patches, delta=1) ## (256,)
         pos_embed = L.Embedding(input_dim=self.num_patches, output_dim=self.hidden_dim)(positions) ## (256, 768)
@@ -170,7 +192,7 @@ class UNetR_2D(Model):
         skip_connections = []
 
         for i in range(1, self.num_layers+1, 1):
-            x = transformer_encoder(self, x)
+            x = self.transformer_encoder(x)
 
             if i in skip_connection_index:
                 skip_connections.append(x)
@@ -179,11 +201,11 @@ class UNetR_2D(Model):
         z3, z6, z9, z12 = skip_connections
 
         ## Reshaping
-        z0 = L.Reshape((self.image_size[0], self.image_size[1], self.num_channels))(inputs)
+        z0 = L.Reshape((self.img_shape[0], self.img_shape[1], self.num_channels))(patches)
 
         shape = (
-            self.image_size[0]//self.patch_size,
-            self.image_size[1]//self.patch_size,
+            self.img_shape[0]//self.patch_size,
+            self.img_shape[1]//self.patch_size,
             self.hidden_dim
         )
         z3 = L.Reshape(shape)(z3)
@@ -196,10 +218,10 @@ class UNetR_2D(Model):
         upscale = total_upscale_factor - 4
 
         if upscale >= 1: ## Patch size 16 or greater
-            z3 = deconv_block(z3, z3.shape[-1], strides=2**upscale)
-            z6 = deconv_block(z6, z6.shape[-1], strides=2**upscale)
-            z9 = deconv_block(z9, z9.shape[-1], strides=2**upscale)
-            z12 = deconv_block(z12, z12.shape[-1], strides=2**upscale)
+            z3 = self.deconv_block(z3, z3.shape[-1], strides=2**upscale)
+            z6 = self.deconv_block(z6, z6.shape[-1], strides=2**upscale)
+            z9 = self.deconv_block(z9, z9.shape[-1], strides=2**upscale)
+            z12 = self.deconv_block(z12, z12.shape[-1], strides=2**upscale)
             # print(z3.shape, z6.shape, z9.shape, z12.shape)
 
         if upscale < 0: ## Patch size less than 16
@@ -210,54 +232,53 @@ class UNetR_2D(Model):
             z12 = L.MaxPool2D((p, p))(z12)
 
         ## Decoder 1
-        x = deconv_block(z12, 128)
-
-        s = deconv_block(z9, 128)
-        s = conv_block(s, 128)
+        x = self.deconv_block(z12, 128)
+        s = self.deconv_block(z9, 128)
+        s = self.conv_block(s, 128)
 
         x = L.Concatenate()([x, s])
 
-        x = conv_block(x, 128)
-        x = conv_block(x, 128)
+        x = self.conv_block(x, 128)
+        x = self.conv_block(x, 128)
 
         ## Decoder 2
-        x = deconv_block(x, 64)
+        x = self.deconv_block(x, 64)
 
-        s = deconv_block(z6, 64)
-        s = conv_block(s, 64)
-        s = deconv_block(s, 64)
-        s = conv_block(s, 64)
+        s = self.deconv_block(z6, 64)
+        s = self.conv_block(s, 64)
+        s = self.deconv_block(s, 64)
+        s = self.conv_block(s, 64)
 
         x = L.Concatenate()([x, s])
-        x = conv_block(x, 64)
-        x = conv_block(x, 64)
+        x = self.conv_block(x, 64)
+        x = self.conv_block(x, 64)
 
         ## Decoder 3
-        x = deconv_block(x, 32)
+        x = self.deconv_block(x, 32)
 
-        s = deconv_block(z3, 32)
-        s = conv_block(s, 32)
-        s = deconv_block(s, 32)
-        s = conv_block(s, 32)
-        s = deconv_block(s, 32)
-        s = conv_block(s, 32)
+        s = self.deconv_block(z3, 32)
+        s = self.conv_block(s, 32)
+        s = self.deconv_block(s, 32)
+        s = self.conv_block(s, 32)
+        s = self.deconv_block(s, 32)
+        s = self.conv_block(s, 32)
 
         x = L.Concatenate()([x, s])
-        x = conv_block(x, 32)
-        x = conv_block(x, 32)
+        x = self.conv_block(x, 32)
+        x = self.conv_block(x, 32)
 
         ## Decoder 4
-        x = deconv_block(x, 16)
+        x = self.deconv_block(x, 16)
 
-        s = conv_block(z0, 16)
-        s = conv_block(s, 16)
+        s = self.conv_block(z0, 16)
+        s = self.conv_block(s, 16)
 
         x = L.Concatenate()([x, s])
-        x = conv_block(x, 16)
-        x = conv_block(x, 16)
+        x = self.conv_block(x, 16)
+        x = self.conv_block(x, 16)
 
         """ Output """
-        out = L.Conv2D(self.num_classes, kernel_size=1, padding="same", activation="sigmoid")(x)
+        out = L.Conv2D(self.n_classes, kernel_size=1, padding="same", activation=self.out_activation)(x)
 
         if self.flatten_output:
             out = Reshape([self.img_shape[0]*self.img_shape[1],
@@ -277,7 +298,7 @@ class UNetR_2D(Model):
         self.logger("Padding:           %s" % self.padding)
         self.logger("Conv activation:   %s" % self.activation)
         self.logger("Out activation:    %s" % self.out_activation)
-        self.logger("Receptive field:   %s" % self.receptive_field)
+        # self.logger("Receptive field:   %s" % self.receptive_field)
         self.logger("N params:          %i" % self.count_params())
         self.logger("Output:            %s" % self.output)
         self.logger("Crop:              %s" % (self.label_crop if np.sum(self.label_crop) != 0 else "None"))
