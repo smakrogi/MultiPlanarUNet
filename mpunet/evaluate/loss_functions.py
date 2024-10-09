@@ -1,4 +1,7 @@
+from keras.src import backend
+from keras.src import ops
 import tensorflow as tf
+from tensorflow.python.util.tf_export import keras_export
 from tensorflow.python.keras.losses import LossFunctionWrapper
 
 
@@ -88,15 +91,22 @@ def sparse_dice_loss(y_true, y_pred, smooth=1):
     :param smooth:
     :return:
     """
+
+    output = tf.convert_to_tensor(y_pred)
+    output_shape = tf.shape(output)
+
     y_true, shape, n_classes = _get_shapes_and_one_hot(y_true, y_pred)
     reduction_dims = range(len(shape))[1:-1]
 
     intersection = tf.reduce_sum(y_true * y_pred, axis=reduction_dims)
     union = tf.reduce_sum(y_true + y_pred, axis=reduction_dims)
     dice = (2 * intersection + smooth) / (union + smooth)
-    return 1.0 - tf.reduce_mean(dice, axis=-1, keepdims=True)
+    res = 1.0 - tf.reduce_mean(dice, axis=-1, keepdims=True)
+    # breakpoint()
+    # res = tf.reshape(res, output_shape[:-1])
+    return res
 
-
+# @keras_export("keras.losses.Loss")
 class SparseDiceLoss(LossFunctionWrapper):
     """ tf reduction wrapper for sparse_dice_loss """
     def __init__(self,
@@ -111,6 +121,43 @@ class SparseDiceLoss(LossFunctionWrapper):
             smooth=smooth
         )
 
+def weighted_sparse_dice_loss(y_true, y_pred, smooth=1):
+    """
+    Approximates the class-wise dice coefficient computed per-batch element
+    across spatial image dimensions. Returns the 1 - mean(per_class_dice) for
+    each batch element.
+
+    :param y_true:
+    :param y_pred:
+    :param smooth:
+    :return:
+    """
+
+    # Small mask classes: 1, 4, 5, 8
+    class_weights = [0.5, 1.0, 0.5, 0.5, 1.0, 1.0, 0.5, 0.5, 1.0]
+    y_true, shape, n_classes = _get_shapes_and_one_hot(y_true, y_pred)
+    reduction_dims = range(len(shape))[1:-1]
+
+    intersection = tf.reduce_sum(class_weights * y_true * y_pred, axis=reduction_dims)
+    union = tf.reduce_sum(y_true + y_pred, axis=reduction_dims)
+    dice = (2 * intersection + smooth) / (union + smooth)
+    res = 1.0 - tf.reduce_mean(dice, axis=-1, keepdims=True)
+    return res
+
+# @keras_export("keras.losses.Loss")
+class WeightedSparseDiceLoss(LossFunctionWrapper):
+    """ tf reduction wrapper for sparse_dice_loss """
+    def __init__(self,
+                 reduction,
+                 smooth=1,
+                 name='weighted_sparse_dice_loss',
+                 **kwargs):
+        super(WeightedSparseDiceLoss, self).__init__(
+            sparse_dice_loss,
+            name=name,
+            reduction=reduction,
+            smooth=smooth
+        )
 
 def sparse_exponential_logarithmic_loss(y_true, y_pred, gamma_dice,
                                         gamma_cross, weight_dice,
@@ -268,3 +315,96 @@ class SparseGeneralizedDiceLoss(LossFunctionWrapper):
 
 # Aliases
 SparseExpLogDice = SparseExponentialLogarithmicLoss
+
+class Dice(LossFunctionWrapper):
+    """Computes the Dice loss value between `y_true` and `y_pred`.
+
+    Formula:
+    ```python
+    loss = 1 - (2 * sum(y_true * y_pred)) / (sum(y_true) + sum(y_pred))
+    ```
+
+    Args:
+        y_true: tensor of true targets.
+        y_pred: tensor of predicted targets.
+
+    Returns:
+        Dice loss value.
+    """
+
+    def __init__(
+        self,
+        reduction="sum_over_batch_size",
+        name="dice",
+    ):
+        super().__init__(
+            dice,
+            name=name,
+            reduction=reduction,
+        )
+
+    def get_config(self):
+        return {
+            "name": self.name,
+            "reduction": self.reduction,
+        }
+
+
+def generalized_dice_coeff(y_true, y_pred):
+    Ncl = y_pred.shape[-1]
+    w = tf.zeros(shape=(Ncl,))
+    w = tf.keras.backend.sum(y_true, axis=(0,1,2))
+    w = 1/(w**2+0.000001)
+    # Compute gen dice coef:
+    # breakpoint()
+
+    numerator = y_true*y_pred
+    numerator = w*tf.keras.backend.sum(numerator,(0,1,2,3))
+    numerator = tf.keras.backend.sum(numerator)
+
+    denominator = y_true+y_pred
+    denominator = w*tf.keras.backend.sum(denominator,(0,1,2,3))
+    denominator = tf.keras.backend.sum(denominator)
+
+    gen_dice_coef = 2*numerator/denominator
+    # breakpoint()
+    return gen_dice_coef
+
+def dice(y_true, y_pred):
+    # breakpoint()
+    y_true, shape, n_classes = _get_shapes_and_one_hot(y_true, y_pred)
+    y_true = tf.cast(y_true, y_pred.dtype)
+    # breakpoint()
+    res = 1 - generalized_dice_coeff(y_true, y_pred)
+    res = tf.reshape(res, (1, -1))
+    return res
+
+# # @keras_export("keras.losses.dice")
+# def dice(y_true, y_pred):
+#     """Computes the Dice loss value between `y_true` and `y_pred`.
+
+#     Formula:
+#     ```python
+#     loss = 1 - (2 * sum(y_true * y_pred)) / (sum(y_true) + sum(y_pred))
+#     ```
+
+#     Args:
+#         y_true: tensor of true targets.
+#         y_pred: tensor of predicted targets.
+
+#     Returns:
+#         Dice loss value.
+#     """
+#     y_pred = ops.convert_to_tensor(y_pred)
+#     y_true = ops.cast(y_true, y_pred.dtype)
+
+#     inputs = ops.reshape(y_true, [-1])
+#     targets = ops.reshape(y_pred, [-1])
+#     breakpoint()
+#     intersection = ops.sum(inputs * targets)
+#     dice = ops.divide(
+#         2.0 * intersection,
+#         ops.sum(y_true) + ops.sum(y_pred) + backend.epsilon(),
+#     )
+
+#     return 1 - dice
