@@ -4,8 +4,9 @@ from mpunet.utils import ensure_list_or_tuple
 from mpunet.errors.implementation_change_errors import NotSparseError
 from tensorflow.keras.optimizers import legacy as optimizers
 from tensorflow.keras import losses, metrics, activations
-from tensorflow_addons import optimizers as addon_optimizers
-from tensorflow_addons import activations as addon_activations
+import tensorflow as tf
+# from tensorflow_addons import optimizers as addon_optimizers
+# from tensorflow_addons import activations as addon_activations
 
 
 # Default error message to raise with non-sparse losses or metrics passed
@@ -105,10 +106,31 @@ def init_optimizer(optimizer_string, logger=None, **kwargs):
     """
     optimizer = _init(
         optimizer_string,
-        tf_funcs=[optimizers, addon_optimizers],
+        # tf_funcs=[optimizers, addon_optimizers],
+        tf_funcs=[optimizers],
         custom_funcs=None,
         logger=logger
     )[0]
+
+    # lr_scheduler = tf.keras.optimizers.schedules.CosineDecay(
+    #     initial_learning_rate=5.0e-5,
+    #     decay_steps=100,
+    #     alpha=0.1,
+    #     name="CosineDecay",
+    #     warmup_target=None,
+    #     warmup_steps=0,
+    # )
+
+    # lr_scheduler = tf.keras.optimizers.schedules.CosineDecayRestarts(
+    #     initial_learning_rate=5.0e-5,
+    #     first_decay_steps=42,
+    #     t_mul=2.0,
+    #     m_mul=1.0,
+    #     alpha=0.0,
+    # )
+    # # breakpoint()
+    # kwargs['learning_rate'] = lr_scheduler
+    
     return optimizer(**kwargs)
 
 
@@ -119,7 +141,8 @@ def init_activation(activation_string, logger=None, **kwargs):
     """
     activation = _init(
         activation_string,
-        tf_funcs=[activations, addon_activations],
+        # tf_funcs=[activations, addon_activations],
+        tf_funcs=[activations],
         custom_funcs=None,
         logger=logger
     )[0]
