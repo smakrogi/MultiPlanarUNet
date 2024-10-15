@@ -1,4 +1,5 @@
 from .elastic_deformation import elastic_transform_2d, elastic_transform_3d
+from .additional_augmentation import add_gaussian_noise, flip, rotate, crop_and_resize
 import numpy as np
 
 
@@ -86,7 +87,7 @@ class Elastic(Augmenter):
     def __call__(self, batch_x, batch_y, bg_values, batch_w=None):
         """
         Deform all images in a batch of images (using linear intrp) and
-        corresponding labels (using nearest intrp)
+        corresponding labels (using nearest intrp)    breakpoint()
         """
         # Only augment some of the images (determined by apply_prob)
         augment_mask = np.random.rand(len(batch_x)) <= self.apply_prob
@@ -149,3 +150,128 @@ class Elastic3D(Elastic):
         return "Elastic3D(alpha=%s, sigma=%s, apply_prob=%.3f)" % (
             self._alpha, self._sigma, self.apply_prob
         )
+    
+class Noise():
+    def __init__(self, apply_prob):
+        if apply_prob > 1 or apply_prob < 0:
+            raise ValueError("Apply probability is invalid with value %3.f" % apply_prob)
+        self.apply_prob = apply_prob
+        self.trans_func = add_gaussian_noise
+        self.__name__ = "Noise"
+
+    def __str__(self):
+        return "%s(apply_prob=%.3f)" % (
+            self.__name__, self.apply_prob
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def __call__(self, batch_x, batch_y, bg_values, batch_w=None):
+        """
+        Deform all images in a batch of images (using linear intrp) and
+        corresponding labels (using nearest intrp)
+        """
+        # Only augment some of the images (determined by apply_prob)
+        augment_mask = np.random.rand(len(batch_x)) <= self.apply_prob
+
+        augmented_x = []
+        for i, (augment, x, y) in enumerate(zip(augment_mask, batch_x, batch_y)):
+            if augment:
+                x = self.trans_func(x)
+            augmented_x.append(x)
+        return augmented_x, batch_y, batch_w
+    
+class Flipping():
+    def __init__(self, apply_prob):
+        if apply_prob > 1 or apply_prob < 0:
+            raise ValueError("Apply probability is invalid with value %3.f" % apply_prob)
+        self.apply_prob = apply_prob
+        self.trans_func = flip
+        self.__name__ = "Flipping"
+
+    def __str__(self):
+        return "%s(apply_prob=%.3f)" % (
+            self.__name__, self.apply_prob
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def __call__(self, batch_x, batch_y, bg_values, batch_w=None):
+        """
+        Deform all images in a batch of images (using linear intrp) and
+        corresponding labels (using nearest intrp)
+        """
+        # Only augment some of the images (determined by apply_prob)
+        augment_mask = np.random.rand(len(batch_x)) <= self.apply_prob
+        augmented_x, augmented_y = [], []
+        for i, (augment, x, y) in enumerate(zip(augment_mask, batch_x, batch_y)):
+            if augment:
+                x, y = self.trans_func(x, y)
+            augmented_x.append(x)
+            augmented_y.append(y)
+        return augmented_x, augmented_y, batch_w
+
+class Rotation():
+    def __init__(self, apply_prob):
+        if apply_prob > 1 or apply_prob < 0:
+            raise ValueError("Apply probability is invalid with value %3.f" % apply_prob)
+        self.apply_prob = apply_prob
+        self.trans_func = rotate
+        self.__name__ = "Rotation"
+
+    def __str__(self):
+        return "%s(apply_prob=%.3f)" % (
+            self.__name__, self.apply_prob
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def __call__(self, batch_x, batch_y, bg_values, batch_w=None):
+        """
+        Deform all images in a batch of images (using linear intrp) and
+        corresponding labels (using nearest intrp)
+        """
+        # Only augment some of the images (determined by apply_prob)
+        augment_mask = np.random.rand(len(batch_x)) <= self.apply_prob
+        augmented_x, augmented_y = [], []
+        for i, (augment, x, y) in enumerate(zip(augment_mask, batch_x, batch_y)):
+            if augment:
+                x, y = self.trans_func(x, y)
+            augmented_x.append(x)
+            augmented_y.append(y)
+        return augmented_x, augmented_y, batch_w
+    
+class CroppingAndResizing():
+    def __init__(self, crop_ratio, apply_prob):
+        if apply_prob > 1 or apply_prob < 0:
+            raise ValueError("Apply probability is invalid with value %3.f" % apply_prob)
+        self.crop_ratio = crop_ratio
+        self.apply_prob = apply_prob
+        self.trans_func = crop_and_resize
+        self.__name__ = "CroppingAndResizing"
+
+    def __str__(self):
+        return "%s(apply_prob=%.3f)" % (
+            self.__name__, self.apply_prob
+        )
+
+    def __repr__(self):
+        return str(self)
+
+    def __call__(self, batch_x, batch_y, bg_values, batch_w=None):
+        """
+        Deform all images in a batch of images (using linear intrp) and
+        corresponding labels (using nearest intrp)
+        """
+        # Only augment some of the images (determined by apply_prob)
+        augment_mask = np.random.rand(len(batch_x)) <= self.apply_prob
+        augmented_x, augmented_y = [], []
+        for i, (augment, x, y) in enumerate(zip(augment_mask, batch_x, batch_y)):
+            if augment:
+                x, y = self.trans_func(x, y, self.crop_ratio)
+            augmented_x.append(x)
+            augmented_y.append(y)
+        return augmented_x, augmented_y, batch_w
