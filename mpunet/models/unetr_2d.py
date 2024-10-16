@@ -120,7 +120,8 @@ class UNetR_2D(Model):
             raise ValueError("Must specify either img_rows and img_col or dim")
         if dim:
             img_rows, img_cols = dim, dim
-
+        # breakpoint()
+            
         # Set logger or standard print wrapper
         self.logger = logger or ScreenLogger()
 
@@ -141,7 +142,7 @@ class UNetR_2D(Model):
         self.num_layers = 12
         self.hidden_dim = 64
         self.mlp_dim = 128
-        self.num_heads = 6
+        self.num_heads = 6 
         self.dropout_rate = 0.1
         self.patch_size = 16
         self.num_patches = (self.img_shape[0]*self.img_shape[1])//(self.patch_size**2)
