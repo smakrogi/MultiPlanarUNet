@@ -52,5 +52,12 @@ def crop_and_resize(image, label, crop_ratio=0.7):
     label = cv.resize(label, (w, h))
     image = np.expand_dims(image, axis=-1)
     return image, label
+
+def blur(image, kernel_size=3):
+    image = image[..., 0]
+    kernel = (kernel_size, kernel_size)
+    image = cv.blur(image, kernel)
+    image = np.expand_dims(image, axis=-1)
+    return image
     
     
