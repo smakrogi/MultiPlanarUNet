@@ -85,6 +85,7 @@ def elastic_transform_3d(image, labels, alpha, sigma, bg_val=0.0):
     image tri-linear interpolated
     Label volumes nearest neighbour interpolated
     """
+    # breakpoint()
     if image.ndim == 3:
         image = np.expand_dims(image, axis=-1)
     shape = image.shape[:3]
@@ -135,4 +136,5 @@ def elastic_transform_3d(image, labels, alpha, sigma, bg_val=0.0):
         labels = lab_intrp(indices).reshape(shape).astype(labels.dtype)
 
     # Interpolate and return in image shape
+    # breakpoint()
     return image, labels
