@@ -35,4 +35,12 @@ def add_noise(image, mean=1.0, std=1.0):
     image = np.clip(image, min_, max_)
     return image
 
+def translate(image, label, translate_axis, max_trans):
+    shift = [0, 0, 0]
+    shift[translate_axis] = max_trans
+    image = ndimage.shift(image, shift=shift, mode='nearest')
+    label = ndimage.shift(label, shift=shift, mode='nearest')
+    return image, label
+
+
 
