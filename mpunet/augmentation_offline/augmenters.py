@@ -104,7 +104,7 @@ class Translation:
     def __repr__(self):
         return str(self)
 
-    def __call__(self, image, label):
+    def __call__(self, image, label, max_trans=20):
         is_apply = random.random() < self.apply_prob
         if is_apply:
             translating_axis = random.choice([0, 1, 2])
