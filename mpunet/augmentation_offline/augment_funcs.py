@@ -19,8 +19,9 @@ def rotate(image, label, rotate_axis, rotate_angle):
         rotate_plane = (0, 1)
     else:
         raise ValueError("Wrong rotating axis")
-    image = ndimage.rotate(image, angle=rotate_angle, axes=rotate_plane, reshape=True, mode='nearest')
-    label = ndimage.rotate(label, angle=rotate_angle, axes=rotate_plane, reshape=True, mode='nearest')
+    image = ndimage.rotate(image, angle=rotate_angle, axes=rotate_plane, reshape=True, mode='constant')
+    label = ndimage.rotate(label, angle=rotate_angle, axes=rotate_plane, reshape=True, mode='constant')
+    label = np.round(label, 0)
     return image, label
 
 def blur(image, sigma=1.0):
@@ -38,8 +39,9 @@ def add_noise(image, mean=1.0, std=1.0):
 def translate(image, label, translate_axis, max_trans):
     shift = [0, 0, 0]
     shift[translate_axis] = max_trans
-    image = ndimage.shift(image, shift=shift, mode='nearest')
-    label = ndimage.shift(label, shift=shift, mode='nearest')
+    image = ndimage.shift(image, shift=shift, mode='constant')
+    label = ndimage.shift(label, shift=shift, mode='constant')
+    label = np.round(label, 0)
     return image, label
 
 
