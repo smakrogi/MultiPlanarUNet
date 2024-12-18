@@ -7,16 +7,16 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 from math import log2
 import tensorflow as tf
-from tensorflow.keras import layers 
-from tensorflow.keras.models import Model
+from keras import layers 
+from keras.models import Model
 
 from mpunet.logging import ScreenLogger
 from mpunet.utils.conv_arithmetics import compute_receptive_fields
 
-from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Input, BatchNormalization, Cropping2D, \
-                                    Concatenate, Conv2D, MaxPooling2D, \
-                                    UpSampling2D, Reshape
+from keras import regularizers
+from keras.layers import Input, BatchNormalization, Cropping2D, \
+                                Concatenate, Conv2D, MaxPooling2D, \
+                                UpSampling2D, Reshape
 import numpy as np
 
 
@@ -55,7 +55,7 @@ class PatchEncoder(layers.Layer):
         encoded = self.projection(patch) + self.position_embedding(positions)
         return encoded
 
-    
+  
 
 class UNetR_2D(Model):
     """

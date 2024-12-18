@@ -9,11 +9,11 @@ November 2017
 from mpunet.logging import ScreenLogger
 from mpunet.utils.conv_arithmetics import compute_receptive_fields
 
-from tensorflow.keras.models import Model
-from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Input, BatchNormalization, Cropping2D, \
-                                    Concatenate, Conv2D, MaxPooling2D, \
-                                    UpSampling2D, Reshape
+from keras.models import Model
+from keras import regularizers
+from keras.layers import Input, BatchNormalization, Cropping2D, \
+                                Concatenate, Conv2D, MaxPooling2D, \
+                                UpSampling2D, Reshape
 import numpy as np
 
 
