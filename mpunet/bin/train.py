@@ -360,7 +360,7 @@ def run(project_dir, gpu_mon, logger, args):
     # Debug mode?
     if args.debug:
         from tensorflow.python import debug as tfdbg
-        from tensorflow.keras import backend as K
+        from keras import backend as K
         K.set_session(tfdbg.LocalCLIDebugWrapperSession(K.get_session()))
 
     # Fit the model
