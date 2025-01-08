@@ -2,8 +2,8 @@ from mpunet.evaluate import loss_functions as custom_losses
 from mpunet.evaluate import metrics as custom_metrics
 from mpunet.utils import ensure_list_or_tuple
 from mpunet.errors.implementation_change_errors import NotSparseError
-from tensorflow.keras.optimizers import legacy as optimizers
-from tensorflow.keras import losses, metrics, activations
+# from keras.optimizers import legacy as optimizers
+from keras import optimizers, losses, metrics, activations
 from tensorflow_addons import optimizers as addon_optimizers
 from tensorflow_addons import activations as addon_activations
 
