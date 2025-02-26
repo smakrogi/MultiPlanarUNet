@@ -47,7 +47,6 @@ mdurl==0.1.2
 ml-dtypes==0.3.2
 monai==1.3.0
 mpmath==1.3.0
--e git+https://github.com/smakrogi/MultiPlanarUNet.git@d48d4afbd3c3dcf8f08d59edbc7b004505211347#egg=mpunet
 namex==0.0.8
 networkx==3.2.1
 neurite==0.2
