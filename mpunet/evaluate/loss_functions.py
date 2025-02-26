@@ -1,5 +1,5 @@
-from keras.src import backend
-from keras.src import ops
+from tensorflow.keras import backend
+from tensorflow.python.framework import ops
 import tensorflow as tf
 from tensorflow.python.util.tf_export import keras_export
 from tensorflow.python.keras.losses import LossFunctionWrapper
