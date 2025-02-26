@@ -41,9 +41,6 @@ git pull
 However, the package is also occasionally updated on PyPi for install with:
 
 ```
-# Note: renamed MultiPlanarUNet -> mpunet in versions 0.2.4
-pip install mpunet
-```
 
 #### Usage
 ```
