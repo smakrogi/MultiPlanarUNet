@@ -50,7 +50,7 @@ def get_argparser():
     parser.add_argument("--train_images_per_epoch", type=int, default=2500,
                         help="Number of training images to sample in each "
                              "epoch")
-    parser.add_argument("--val_images_per_epoch", type=int, default=3500,
+    parser.add_argument("--val_images_per_epoch", type=int, default=1500,
                         help="Number of training images to sample in each "
                              "epoch")
     parser.add_argument("--max_loaded_images", type=int, default=None,
