@@ -124,11 +124,11 @@ class SWIN_UNet_2D(Model):
                    ):
 
         
-        model = models.swin_unet_2d(self.img_shape, filter_num_begin=64, 
+        model = models.swin_unet_2d(self.img_shape, filter_num_begin=96, 
                                     n_labels=self.n_classes, depth=4, stack_num_down=2, 
                                     stack_num_up=2, patch_size=(4, 4), 
-                                    num_heads=[4, 8, 8, 8], 
-                                    window_size=[4, 2, 2, 2], num_mlp=512,
+                                    num_heads=[3, 6, 12, 24], 
+                                    window_size=[7, 7, 7, 7], num_mlp=256,
                                     output_activation='Softmax', shift_window=True, 
                                     name='swin_unet_2d')
         
